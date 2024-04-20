@@ -17,14 +17,36 @@ client_chat_id = None  # ID чата клиента будет установл�
 dialog_active = False  # Флаг активности диалога
 
 
+class Questions(StatesGroup):
+    question1 = State()
+    question2 = State()
+    temp = State()
+
+
 @router.message(Command('start'))
-async def start(message: Message):
+async def start(message: Message, state: FSMContext):
     global client_chat_id
     client_chat_id = message.chat.id
     await bot.send_message(admin_id,
                            f"Получена новая заявка от {message.from_user.full_name}. Нажмите кнопку чтобы начать диалог.",
                            reply_markup=kb.get_start)
     await bot.send_message(client_chat_id, "Здравствуйте! Ожидайте пока к диалогу подключается менеджер.")
+    await bot.send_message(client_chat_id, "Вопрос 1", reply_markup=kb.q1)
+
+
+@router.callback_query(F.data.startswith("ans_"))
+async def callbacks_num(callback: CallbackQuery, state: FSMContext):
+    action = callback.data.split("_")[1]
+    await callback.message.edit_reply_markup()
+    if action == "1":
+        await state.update_data(question1="ans1")
+    elif action == "2":
+        await state.update_data(question1="ans2")
+    await callback.answer()
+    data = await state.get_data()
+    await bot.send_message(admin_id, f'Вопрос 1: ответ от {callback.from_user.full_name} - {data["question1"]}')
+    await bot.send_message(client_chat_id, "Спасибо за ответы! Менеджер скоро присоединится")
+    await callback.answer()
 
 
 @router.callback_query(F.data == "Start dialog")
