@@ -1,5 +1,5 @@
 from aiogram import F, Router, Bot
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery, Update, ReplyKeyboardRemove
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
@@ -11,68 +11,44 @@ import core.keyboard as kb  # Importing custom keyboard markup
 router = Router()
 bot = Bot(settings.bots.bot_token)
 
-class Register(StatesGroup):
-    start_dialog = State()
-    wait = State()
-    comment = State()
-    finish = State()
-    question1 = State()
-    check = State()
-
-
 admin_id = int(settings.bots.admin_id)
-user_id = None
-permission_to_send_messages = False
+
+client_chat_id = None  # ID чата клиента будет установлено при получении заявки
+dialog_active = False  # Флаг активности диалога
 
 
-@router.message(CommandStart())
-async def get_start(message: Message, state: FSMContext):
-    global user_id
-    await message.answer('Здравствуйте! Ожидайте пока к диалогу подключается менеджер.')
-    await bot.send_message(chat_id=settings.bots.admin_id, text=f'Заявка от {message.from_user.full_name}',
+@router.message(Command('start'))
+async def start(message: Message):
+    global client_chat_id
+    client_chat_id = message.chat.id
+    await bot.send_message(admin_id,
+                           f"Получена новая заявка от {message.from_user.full_name}. Нажмите /start_dialog чтобы начать диалог.",
                            reply_markup=kb.get_start)
-    await state.update_data(user_id=message.from_user.id)
-    user_id = int(message.from_user.id)
-    await state.set_state(Register.wait)
-
-
-@router.message(Register.wait)
-async def handle_messages(message: Message, state:FSMContext):
-    data = await state.get_data()
-    if data.get("wait"):
-        await state.set_state(Register.start_dialog)
-
-@router.message(Register.start_dialog)
-async def handle_messages(message: Message, state: FSMContext):
-    global user_id
-    if message.from_user.id == admin_id:
-        if user_id:
-            try:
-                await bot.send_message(user_id, f"Админ написал: {message.text}")
-            except Exception as e:
-                logging.exception(e)
-        else:
-            await message.reply("ID пользователя неизвестен. Пожалуйста, дождитесь сообщения от пользователя.")
-    else:
-        try:
-            await bot.send_message(admin_id, f"Пользователь написал: {message.text}", reply_markup=kb.stop)
-        except Exception as e:
-            logging.exception(e)
-
-    await state.set_state(Register.start_dialog)  # Устанавливаем состояние "start_dialog"
+    await bot.send_message(client_chat_id, "Здравствуйте! Ожидайте пока к диалогу подключается менеджер.")
 
 
 @router.callback_query(F.data == "Start dialog")
-async def start_dialog_callback(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Диалог начат.")
-    await bot.send_message(chat_id=user_id, text="Диалог начат.")
-    await state.set_state(Register.start_dialog)
-    await state.update_data(wait=True)
-    global permission_to_send_messages
-    permission_to_send_messages = True
+async def start_dialog(message: Message):
+    global dialog_active
+    dialog_active = True
+    await bot.send_message(admin_id,
+                           "Диалог начат. Все, что вы напишете, будет отправлено клиенту. Нажмите /end_dialog чтобы закончить диалог.")
+    await bot.send_message(client_chat_id, "Диалог начат. Все, что вы напишете, будет отправлено менеджеру.")
 
 
 @router.callback_query(F.data == "Stop dialog")
-async def start_dialog_callback(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Диалог закончен.")
-    await state.set_state(None)
+async def end_dialog(callback: CallbackQuery):
+    global dialog_active
+    dialog_active = False
+    await bot.send_message(admin_id, "Диалог закончен.")
+    await bot.send_message(client_chat_id, "Диалог закончен.")
+
+
+@router.message()
+async def forward_message(message: Message):
+    global client_chat_id
+    if dialog_active:
+        if message.chat.id == admin_id and client_chat_id is not None:
+            await bot.send_message(client_chat_id, message.text)
+        elif message.chat.id == client_chat_id:
+            await bot.send_message(admin_id, message.text, reply_markup=kb.stop)
