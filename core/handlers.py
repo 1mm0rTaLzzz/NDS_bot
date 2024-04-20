@@ -28,12 +28,13 @@ async def start(message: Message):
 
 
 @router.callback_query(F.data == "Start dialog")
-async def start_dialog(message: Message):
+async def start_dialog(callback: CallbackQuery):
     global dialog_active
     dialog_active = True
     await bot.send_message(admin_id,
                            "Диалог начат. Все, что вы напишете, будет отправлено клиенту. Нажмите /end_dialog чтобы закончить диалог.")
     await bot.send_message(client_chat_id, "Диалог начат. Все, что вы напишете, будет отправлено менеджеру.")
+    await callback.message.edit_reply_markup(None)
 
 
 @router.callback_query(F.data == "Stop dialog")
@@ -42,6 +43,7 @@ async def end_dialog(callback: CallbackQuery):
     dialog_active = False
     await bot.send_message(admin_id, "Диалог закончен.")
     await bot.send_message(client_chat_id, "Диалог закончен.")
+    await callback.message.edit_reply_markup(None)
 
 
 @router.message()
