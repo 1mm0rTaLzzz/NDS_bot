@@ -7,4 +7,4 @@ question1 = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Ответ 1', callback_data="Pressed1"),
      InlineKeyboardButton(text='Ответ 2', callback_data="Pressed2")]
 ])
-stop = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='Закончить диалог', callback_data="Stop")]])
+stop = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='Закончить диалог', callback_data="Stop dialog")]])

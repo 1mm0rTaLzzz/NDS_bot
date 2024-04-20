@@ -5,15 +5,12 @@ from core.settings import settings
 from core.handlers import router
 
 
-
 async def get_start(bot: Bot):
     await bot.send_message(settings.bots.admin_id, "Бот запущен!")
 
 
-
 async def get_stop(bot: Bot):
     await bot.send_message(settings.bots.admin_id, "Бот остановлен!")
-
 
 
 async def main():
@@ -23,7 +20,7 @@ async def main():
     dp = Dispatcher()
     dp.startup.register(get_start)
     dp.shutdown.register(get_stop)
-    dp.include_router(router)
+    dp.include_routers(router)
 
     try:
         await dp.start_polling(bot)
