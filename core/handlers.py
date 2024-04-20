@@ -1,6 +1,6 @@
 from aiogram import F, Router, Bot
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, CallbackQuery, Update, ReplyKeyboardRemove
+from aiogram.types import Message, CallbackQuery, Update
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from core.settings import settings
@@ -22,7 +22,7 @@ async def start(message: Message):
     global client_chat_id
     client_chat_id = message.chat.id
     await bot.send_message(admin_id,
-                           f"Получена новая заявка от {message.from_user.full_name}. Нажмите /start_dialog чтобы начать диалог.",
+                           f"Получена новая заявка от {message.from_user.full_name}. Нажмите кнопку чтобы начать диалог.",
                            reply_markup=kb.get_start)
     await bot.send_message(client_chat_id, "Здравствуйте! Ожидайте пока к диалогу подключается менеджер.")
 
@@ -32,7 +32,7 @@ async def start_dialog(callback: CallbackQuery):
     global dialog_active
     dialog_active = True
     await bot.send_message(admin_id,
-                           "Диалог начат. Все, что вы напишете, будет отправлено клиенту. Нажмите /end_dialog чтобы закончить диалог.")
+                           "Диалог начат. Все, что вы напишете, будет отправлено клиенту. Нажмите кнопку чтобы закончить диалог.")
     await bot.send_message(client_chat_id, "Диалог начат. Все, что вы напишете, будет отправлено менеджеру.")
     await callback.message.edit_reply_markup(None)
 
