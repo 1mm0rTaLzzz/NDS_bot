@@ -1,9 +1,15 @@
+from datetime import timedelta
 from aiogram import F, Router, Bot
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery, Update
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from core.settings import settings
+
+from scheduler.scheduler import add_bot_scheduled_notification
+from scheduler.strings import next_day_notification
+from scheduler.db import create_user
+
 import logging
 
 import core.keyboard as kb  # Importing custom keyboard markup
@@ -20,6 +26,7 @@ dialog_active = False  # Флаг активности диалога
 class Questions(StatesGroup):
     question1 = State()
     question2 = State()
+    comment = State()
     temp = State()
 
 
@@ -34,6 +41,11 @@ async def start(message: Message, state: FSMContext):
                            "Здравствуйте! Пока к диалогу подключается менеджер, ответьте на два вопроса.")
     await bot.send_message(client_chat_id, "За какой период интересует оптимизация?", reply_markup=kb.q1)
 
+    try:
+        create_user(client_chat_id)
+        add_bot_scheduled_notification(bot, client_chat_id, message.date + timedelta(days=1), message_text=next_day_notification, reply_markup=kb.comment) # Добавление задачи в планировщик для отправки сообщения через день
+    except Exception as e:
+        print(e)
 
 
 @router.callback_query(F.data.startswith("q1ans_"))
@@ -67,6 +79,22 @@ async def callbacks_num(callback: CallbackQuery, state: FSMContext):
                            f'Введённые данные\n{data["question1"]}\n{data["question2"]}')
     await bot.send_message(client_chat_id, "Спасибо за ответы! Менеджер скоро присоединится.")
 
+@router.callback_query(F.data.startswith("comment"))
+async def callbacks_num(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_reply_markup()
+    
+    await bot.send_message(callback.from_user.id, 'Оставьте свой комментарий.')
+
+    await state.set_state(Questions.comment)
+
+@router.message(Questions.comment)
+async def comment(message: Message, state: FSMContext):
+    await bot.send_message(admin_id, f'Комментарий от {message.from_user.full_name}\n{message.text}')
+    await bot.send_message(message.from_user.id, f'Ваш комментарий\n{message.text}')
+    await bot.send_message(message.from_user.id, "Спасибо за комментарий!")
+    
+    await state.set_state(None)
+
 
 @router.callback_query(F.data == "Start dialog")
 async def start_dialog(callback: CallbackQuery):
@@ -85,6 +113,9 @@ async def end_dialog(callback: CallbackQuery):
     await bot.send_message(admin_id, "Диалог закончен.")
     await bot.send_message(client_chat_id, "Диалог закончен.")
     await callback.message.edit_reply_markup()
+
+
+@router.message(Command('stop'))
 
 
 @router.message()

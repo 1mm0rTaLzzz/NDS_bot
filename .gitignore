@@ -14,3 +14,6 @@
 /vcs.xml
 /TelegramBotOrder11.iml
 .idea
+
+/env
+*.pyc
