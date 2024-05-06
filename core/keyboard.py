@@ -13,3 +13,5 @@ q2 = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='от 0 д
                                            [InlineKeyboardButton(text='от 10 до 50 млн', callback_data="q2ans_2")],
                                            [InlineKeyboardButton(text='от 50 до 100 млн', callback_data="q2ans_3")],
                                            [InlineKeyboardButton(text='более 100 млн', callback_data="q2ans_4")]])
+
+comment = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='Оставить комментарий', callback_data="comment")]])
