@@ -6,7 +6,7 @@ from core.settings import settings
 from core.handlers import router
 from scheduler.db import create_tables
 from scheduler.scheduler import add_mailing
-from scheduler.strings import six_day_notification, three_day_notification
+from scheduler.strings import six_day_notification, three_day_notification, last_chance_notification
 
 from apscheduler.schedulers import SchedulerAlreadyRunningError
 
@@ -32,6 +32,7 @@ async def main():
     try:
         add_mailing(bot, datetime(2024, 4, 19, 12, 0, 0), six_day_notification)
         add_mailing(bot, datetime(2024, 4, 22, 12, 0, 0), three_day_notification)
+        add_mailing(bot, datetime(2024, 1, 25, 11, 0, 0), last_chance_notification)
     except SchedulerAlreadyRunningError:
         pass
 
